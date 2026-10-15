@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Checklist Técnico FTTH</title>
+    <meta name="theme-color" content="#0b132b">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Checklist FTTH">
+    <style>
+        :root {
+            --bg-dark: #0b132b;
+            --card-bg: #1c2541;
+            --accent-green: #10b981;
+            --accent-blue: #3b82f6;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 12px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: #0f172a;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+
+        header h1 {
+            font-size: 1.4rem;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        header p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .gps-status {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            display: inline-block;
+            margin-top: 6px;
+            font-weight: 600;
+        }
+        .gps-ok { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #059669; }
+        .gps-wait { background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid #ca8a04; }
+
+        .btn-back {
+            background: #334155;
+            color: #fff;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 15px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            width: fit-content;
+        }
+
+        .protocol-box {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+        }
+
+        .protocol-box label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .protocol-box input, .protocol-box select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: #0f172a;
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .protocol-box select {
+            font-size: 0.95rem;
+            font-weight: normal;
+        }
+
+        .protocol-box input:focus, .protocol-box select:focus {
+            outline: 2px solid var(--accent-blue);
+        }
+
+        .privacy-note {
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            padding: 10px 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .privacy-note strong {
+            color: var(--accent-blue);
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .menu-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .menu-card:active {
+            transform: scale(0.97);
+            background: #243256;
+        }
+
+        .menu-card .icon {
+            font-size: 1.8rem;
+        }
+
+        .menu-card span {
+            font-size: 0.85rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .progress-container {
+            margin-bottom: 15px;
+            background: var(--card-bg);
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            margin-bottom: 6px;
+            color: var(--text-muted);
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 8px;
+            background: #0f172a;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--accent-green);
+            transition: width 0.3s ease;
+        }
+
+        .checklist-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .checklist-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 12px 14px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .checklist-item.done {
+            border-color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .item-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .item-num {
+            background: #0f172a;
+            color: var(--accent-blue);
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .checklist-item.done .item-num {
+            background: var(--accent-green);
+            color: #fff;
+        }
+
+        .item-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .btn-capture {
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .btn-capture:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .checklist-item.done .btn-capture {
+            background: #059669;
+        }
+
+
+        .btn-group { display: flex; gap: 6px; flex-shrink: 0; }
+        .btn-capture.btn-gallery { background: #475569; }
+        .checklist-item.done .btn-capture.btn-gallery { background: #475569; }
+        .item-count { display: block; font-size: 0.7rem; color: var(--accent-green); font-weight: 600; margin-top: 2px; }
+        .extra-input {
+            flex: 1; min-width: 0; padding: 10px; border-radius: 8px;
+            border: 1px solid var(--border-color); background: #0f172a; color: #fff; font-size: 0.85rem;
+            -webkit-user-select: text; user-select: text;
+        }
+        .extra-input:focus { outline: 2px solid var(--accent-blue); }
+        .protocol-box input { -webkit-user-select: text; user-select: text; }
+        .extra-lista { flex-basis: 100%; font-size: 0.72rem; color: var(--text-muted); line-height: 1.5; }
+        .gps-status { cursor: pointer; }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .criteria-box {
+            background: #0f172a;
+            border: 1px solid var(--accent-green);
+            border-radius: 12px;
+            padding: 14px;
+            margin-top: 10px;
+        }
+
+        .criteria-box h3 {
+            font-size: 0.85rem;
+            color: var(--accent-green);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .criteria-list {
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 6px;
+        }
+
+        .criteria-list li {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .criteria-list li::before {
+            content: "✓";
+            color: var(--accent-green);
+            font-weight: bold;
+        }
+
+        footer {
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        footer strong {
+            color: var(--text-main);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1 id="app-title">🌐 TÉCNICO TELECOM</h1>
+        <p id="app-subtitle">Selecione o tipo de atendimento</p>
+        <div id="gps-status-badge" class="gps-status gps-wait" onclick="iniciarGPS(true)">📡 Obtendo sinal de GPS...</div>
+    </header>
+
+    <div class="protocol-box">
+        <label for="protocolo">NÚMERO DA O.S. / PROTOCOLO:</label>
+        <input type="text" id="protocolo" placeholder="Digite novo protocolo..." autocomplete="off" autocorrect="off" spellcheck="false" oninput="atualizarEstadoBotoes()">
+        
+        <label for="historico-select" style="margin-top: 10px;">OU SELECIONAR PROTOCOLO ANTERIOR:</label>
+        <select id="historico-select" onchange="carregarProtocoloAntigo(this.value)">
+            <option value="">-- Histórico de Protocolos --</option>
+        </select>
+    </div>
+
+    <div class="privacy-note" id="privacy-box">
+        🔒 <strong>Privacidade e Armazenamento Local:</strong> O app roda 100% no seu dispositivo. As fotos recebem marca d'água com geolocalização e são salvas na sua pasta de downloads. O progresso fica salvo para evitar perdas se atualizar a página.
+    </div>
+
+    <div id="screen-menu">
+        <div class="menu-grid" id="menu-grid"></div>
+    </div>
+
+    <div id="screen-checklist" class="hidden">
+        <button class="btn-back" onclick="voltarMenu()">← Voltar ao Menu</button>
+
+        <div class="progress-container">
+            <div class="progress-info">
+                <span>Progresso das Fotos</span>
+                <span id="progress-text">0 / 0</span>
+            </div>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="progress-fill"></div>
+            </div>
+        </div>
+
+        <div class="checklist-list" id="checklist-container"></div>
+
+        <div class="criteria-box">
+            <h3>Critérios para Liberação da O.S.</h3>
+            <ul class="criteria-list" id="criteria-container"></ul>
+        </div>
+    </div>
+
+    <footer>
+        <p style="margin-bottom: 3px;">Ferramenta de Uso Operacional Exclusivo</p>
+        <p>© 2026 — Desenvolvido por <strong>Joziel Rocha</strong></p>
+    </footer>
+</div>
+
+<script>
+    document.addEventListener('contextmenu', event => {
+        // Libera o menu de copiar/colar (toque longo) nos campos de texto
+        if (event.target && event.target.closest && event.target.closest('input, textarea, select')) return;
+        event.preventDefault();
+    });
+    document.onkeydown = function(e) {
+        if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && e.keyCode == 73) || (e.ctrlKey && e.keyCode == 85)) {
+            return false;
+        }
+    };
+
+    const checklistsData = {
+        "ativacao_ftth": { title: "ATIVAÇÃO FTTH", icon: "🌐", items: ["ANEXO IPV6", "ANEXO EQUIPAMENTO INSTALADO", "ANEXO ORGANIZAÇÃO CTO", "ANEXO PING", "ANEXO SINAL NA CTO", "ANEXO TESTE DE VELOCIDADE", "ASSINATURA DO CLIENTE", "DESLOCAMENTO", "LANÇADO CONECTOR", "LANÇADO DROP", "LANÇADO ESTICADOR", "LANÇADO MIGUELÃO", "ALOCAÇÃO DO EQUIPAMENTO", "RELATO", "ANEXO SINAL NO CLIENTE", "ANEXO SOBREPOSIÇÃO SINAL WIRELESS", "ANEXO FIRMWARE", "CONFIGURAÇÃO TR069"], criterios: ["Equipamento alocado e instalado corretamente", "Organização da CTO e sinal dentro do padrão", "Sinal no cliente e Ping validados", "Teste de velocidade e IPv6 funcionais", "Firmware atualizado e TR-069 configurado", "Materiais e lançamentos informados", "Assinatura e relato técnico coletados"] },
+        "mudanca_comodo": { title: "MUDANÇA DE CÔMODO", icon: "🏠", items: ["RELATO", "ALOCAÇÃO DO EQUIPAMENTO", "DESLOCAMENTO", "ASSINATURA DO CLIENTE", "ANEXO TESTE DE VELOCIDADE", "ANEXO SOBREPOSIÇÃO SINAL WIRELESS", "ANEXO EQUIPAMENTO INSTALADO", "ANEXO FIRMWARE", "LANÇADO MATERIAL (DIVERSOS)"], criterios: ["Equipamento alocado e instalado corretamente", "Teste de velocidade e sinal no cliente aprovados", "Sobreposição wireless e Firmware validados", "Materiais lançados e Deslocamento informado", "Relato técnico e Assinatura coletados"] },
+        "lenta_oscilacao": { title: "LENTA / OSCILAÇÃO", icon: "📶", items: ["ANEXO FIRMWARE", "ANEXO PING", "ANEXO SOBREPOSIÇÃO SINAL WIRELESS", "ANEXO TESTE DE VELOCIDADE", "ANEXO TRACEROUTE", "ASSINATURA DO CLIENTE", "DESLOCAMENTO", "RELATO", "ANEXO IPV6", "ANEXO SINAL NO CLIENTE", "CONFIGURAÇÃO TR069"], criterios: ["Todos os anexos obrigatórios enviados", "Traceroute sem perda excessiva", "Ping e Sinal dentro do padrão operacional", "IPv6 e TR-069 validados", "Relato técnico e Assinatura coletados"] },
+        "mudanca_endereco": { title: "MUDANÇA DE ENDEREÇO", icon: "📍", items: ["RELATO", "LANÇADO DROP", "LANÇADO ESTICADOR", "LANÇADO MIGUELÃO", "LANÇADO CONECTOR", "DESLOCAMENTO", "ASSINATURA DO CLIENTE", "ANEXO ORGANIZAÇÃO CTO", "ANEXO SINAL NO CLIENTE", "ANEXO SOBREPOSIÇÃO SINAL WIRELESS", "ANEXO SINAL NA CTO", "ANEXO TESTE DE VELOCIDADE", "ANEXO FIRMWARE", "ANEXO IPV6", "ANEXO PING", "ANEXO EQUIPAMENTO INSTALADO", "CONFIGURAÇÃO TR-069"], criterios: ["Relato técnico e Assinatura do cliente coletados", "Equipamento devidamente instalado", "Organização e Sinal na CTO/Cliente dentro do padrão", "Teste de velocidade, Ping e IPv6 funcionais", "Firmware e TR-069 configurados", "Lançamentos de materiais devidamente registrados"] },
+        "pre_instalacao": { title: "PRÉ-INSTALAÇÃO", icon: "📡", items: ["ANEXO ORGANIZAÇÃO CTO", "ANEXO SINAL NA CTO", "DESLOCAMENTO", "LANÇADO DROP", "LANÇADO ESTICADOR", "LANÇADO CONECTOR", "RELATO", "ASSINATURA DO CLIENTE"], criterios: ["Organização e Sinal na CTO dentro do padrão", "Todos os lançamentos de rede realizados", "Relato técnico preenchido", "Assinatura do cliente coletada", "Deslocamento e anexos obrigatórios enviados"] },
+        "ponto_adicional": { title: "PONTO ADICIONAL", icon: "➕", items: ["RELATO", "ALOCAÇÃO DO EQUIPAMENTO", "DESLOCAMENTO", "ASSINATURA DO CLIENTE", "ANEXO TESTE DE VELOCIDADE", "ANEXO SOBREPOSIÇÃO SINAL WIRELESS", "ANEXO EQUIPAMENTO INSTALADO", "ANEXO FIRMWARE", "ANEXO PING", "LANÇADO MATERIAL (DIVERSOS)"], criterios: ["Equipamento devidamente alocado e instalado", "Firmware atualizado e Ping/Velocidade ok", "Sobreposição Wireless validada", "Materiais utilizados e Deslocamento lançados", "Assinatura e Relato coletados"] },
+        "retirada": { title: "RETIRADA DE EQUIPAMENTO", icon: "🚚", items: ["ASSINATURA DO CLIENTE", "DESLOCAMENTO", "RELATO", "REMOÇÃO DO PATRIMÔNIO"], criterios: ["Assinatura do cliente coletada", "Deslocamento informado", "Relato técnico preenchido", "Remoção do patrimônio realizada e conferida"] },
+        "nao_conecta": { title: "NÃO CONECTA", icon: "❌", items: ["RELATO", "ANEXO FIRMWARE", "ANEXO SINAL NO CLIENTE", "ANEXO PING", "DESLOCAMENTO", "ANEXO TESTE DE VELOCIDADE", "LANÇADO MATERIAL (DIVERSOS)", "ANEXO SOBREPOSIÇÃO SINAL WIRELESS", "ASSINATURA DO CLIENTE", "ANEXO SINAL NA CTO", "ANEXO ORGANIZAÇÃO CTO", "ANEXO IPV6", "CONFIGURAÇÃO TR-069"], criterios: ["Sinal na CTO e Cliente validados", "Organização da CTO anexada", "Ping, Velocidade e IPv6 checados", "Firmware e TR-069 reconfigurados", "Materiais e Relato devidamente registrados"] },
+        "upgrade": { title: "UPGRADE DE PLANO", icon: "⬆️", items: ["ALOCAÇÃO DO EQUIPAMENTO", "ANEXO FIRMWARE", "ANEXO EQUIPAMENTO INSTALADO", "ANEXO IPV6", "ANEXO PING", "ANEXO SINAL NO CLIENTE", "ANEXO SOBREPOSIÇÃO SINAL WIRELESS", "ANEXO TESTE DE VELOCIDADE", "ASSINATURA DO CLIENTE", "CONFIGURAÇÃO TR-069", "DESLOCAMENTO", "RELATO", "REMOÇÃO DO PATRIMÔNIO"], criterios: ["Equipamento antigo removido e novo alocado/instalado", "Firmware, IPv6, Ping e Sinal validados", "Teste de velocidade aprovado no novo plano", "TR-069 e Sobreposição Wireless validados", "Relato técnico e Assinatura coletados"] },
+        "item_adicional": { title: "ITEM ADICIONAL", icon: "📦", items: ["ALOCAÇÃO DO EQUIPAMENTO", "ANEXO EQUIPAMENTO INSTALADO", "RELATO", "DESLOCAMENTO", "ASSINATURA DO CLIENTE", "LANÇADO MATERIAL (DIVERSOS)"], criterios: ["Equipamento alocado e instalado corretamente", "Relato técnico preenchido", "Deslocamento e materiais lançados", "Assinatura do cliente coletada"] }
+    };
+
+    
+    function lerJSON(chave) {
+        try { return JSON.parse(localStorage.getItem(chave) || "{}") || {}; } catch (e) { return {}; }
+    }
+    function gravarJSON(chave, obj) {
+        try { localStorage.setItem(chave, JSON.stringify(obj)); } catch (e) {}
+    }
+
+    let currentKey = "";
+    let completedItems = lerJSON("checklist_completos");
+    let extrasSalvos = lerJSON("checklist_extras");
+    let latGlobal = "";
+    let lonGlobal = "";
+    let watchId = null;
+
+    // ---------- GPS ----------
+    function definirPosicao(pos) {
+        latGlobal = pos.coords.latitude.toFixed(6);
+        lonGlobal = pos.coords.longitude.toFixed(6);
+        const badge = document.getElementById("gps-status-badge");
+        if (badge) {
+            badge.className = "gps-status gps-ok";
+            badge.innerText = `📍 GPS Conectado (${latGlobal}, ${lonGlobal})`;
+        }
+    }
+
+    function erroGPS(err, altaPrecisao) {
+        const badge = document.getElementById("gps-status-badge");
+        // Se falhou com alta precisão (indisponível/tempo esgotado), tenta de novo com precisão normal
+        if (altaPrecisao && err && err.code !== 1) { iniciarGPS(false, false); return; }
+        if (!badge) return;
+        badge.className = "gps-status gps-wait";
+        if (!window.isSecureContext) {
+            badge.innerText = "⚠️ GPS exige link seguro (https). Toque para tentar";
+        } else if (err && err.code === 1) {
+            badge.innerText = "⚠️ Localização bloqueada para este site. Libere nas permissões e toque aqui";
+        } else {
+            badge.innerText = "⚠️ GPS indisponível (ligue a Localização). Toque para tentar";
+        }
+    }
+
+    function iniciarGPS(manual, altaPrecisao) {
+        if (altaPrecisao === undefined) altaPrecisao = true;
+        const badge = document.getElementById("gps-status-badge");
+        if (!navigator.geolocation) {
+            if (badge) badge.innerText = "❌ GPS não suportado neste navegador";
+            return;
+        }
+        if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+        if (badge && !latGlobal) {
+            badge.className = "gps-status gps-wait";
+            badge.innerText = "📡 Obtendo sinal de GPS...";
+        }
+        const opts = { enableHighAccuracy: altaPrecisao, maximumAge: 30000, timeout: altaPrecisao ? 15000 : 30000 };
+        try {
+            watchId = navigator.geolocation.watchPosition(definirPosicao, e => erroGPS(e, altaPrecisao), opts);
+        } catch (e) { erroGPS(e, false); }
+    }
+
+    // Tenta pegar a posição na hora de salvar a foto (caso o monitoramento ainda não tenha retornado)
+    function pegarPosicaoAgora(timeoutMs) {
+        return new Promise(resolve => {
+            if (!navigator.geolocation) return resolve(false);
+            try {
+                navigator.geolocation.getCurrentPosition(
+                    p => { definirPosicao(p); resolve(true); },
+                    () => resolve(false),
+                    { enableHighAccuracy: false, maximumAge: 120000, timeout: timeoutMs }
+                );
+            } catch (e) { resolve(false); }
+        });
+    }
+
+    // ---------- Histórico ----------
+    function carregarHistoricoSelect() {
+        const select = document.getElementById("historico-select");
+        if (!select) return;
+        select.innerHTML = '<option value="">-- Histórico de Protocolos --</option>';
+
+        let protocolosSalvos = new Set();
+        Object.keys(completedItems).concat(Object.keys(extrasSalvos)).forEach(key => {
+            let parts = key.split("_");
+            if (parts.length > 0 && parts[0]) protocolosSalvos.add(parts[0]);
+        });
+
+        protocolosSalvos.forEach(prot => {
+            let opt = document.createElement("option");
+            opt.value = prot;
+            opt.innerText = `Protocolo: ${prot}`;
+            select.appendChild(opt);
+        });
+    }
+
+    function carregarProtocoloAntigo(val) {
+        if (!val) return;
+        document.getElementById("protocolo").value = val;
+        atualizarEstadoBotoes();
+    }
+
+    function renderMenu() {
+        carregarHistoricoSelect();
+        const grid = document.getElementById("menu-grid");
+        grid.innerHTML = "";
+
+        Object.keys(checklistsData).forEach(key => {
+            const item = checklistsData[key];
+            const card = document.createElement("div");
+            card.className = "menu-card";
+            card.onclick = () => abrirChecklist(key);
+            card.innerHTML = `<div class="icon">${item.icon}</div><span>${item.title}</span>`;
+            grid.appendChild(card);
+        });
+    }
+
+    function abrirChecklist(key) {
+        const prot = document.getElementById("protocolo").value.trim();
+        if (!prot) {
+            alert("Por favor, digite ou selecione o NÚMERO DA O.S. / PROTOCOLO primeiro!");
+            document.getElementById("protocolo").focus();
+            return;
+        }
+
+        currentKey = key;
+        const data = checklistsData[key];
+
+        document.getElementById("app-title").innerText = `${data.icon} ${data.title}`;
+        document.getElementById("app-subtitle").innerText = `Protocolo: ${prot}`;
+
+        document.getElementById("screen-menu").classList.add("hidden");
+        document.getElementById("privacy-box").classList.add("hidden");
+        document.getElementById("screen-checklist").classList.remove("hidden");
+
+        renderChecklistItems(data);
+        renderCriterios(data.criterios);
+        atualizarProgresso();
+    }
+
+    function voltarMenu() {
+        document.getElementById("app-title").innerText = "🌐 TÉCNICO TELECOM";
+        document.getElementById("app-subtitle").innerText = "Selecione o tipo de atendimento";
+        document.getElementById("screen-checklist").classList.add("hidden");
+        document.getElementById("screen-menu").classList.remove("hidden");
+        document.getElementById("privacy-box").classList.remove("hidden");
+        carregarHistoricoSelect();
+    }
+
+    // ---------- Contadores ----------
+    function contagemItem(stateKey) {
+        const v = completedItems[stateKey];
+        if (v === true) return 1;          // compatível com versões antigas
+        return Number(v) || 0;
+    }
+
+    function limparNome(s) {
+        return String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    }
+
+    function textoContagem(n) {
+        return n > 0 ? (n === 1 ? "1 foto salva" : `${n} fotos salvas`) : "";
+    }
+
+    // ---------- Render ----------
+    function renderChecklistItems(data) {
+        const container = document.getElementById("checklist-container");
+        container.innerHTML = "";
+        const prot = document.getElementById("protocolo").value.trim();
+
+        data.items.forEach((itemText, idx) => {
+            const itemId = `item_${idx}`;
+            const stateKey = `${prot}_${currentKey}_${itemId}`;
+            const n = contagemItem(stateKey);
+            const isDone = n > 0;
+
+            const div = document.createElement("div");
+            div.className = `checklist-item ${isDone ? 'done' : ''}`;
+            div.id = `card-${itemId}`;
+
+            div.innerHTML = `
+                <div class="item-info">
+                    <div class="item-num">${idx + 1}</div>
+                    <div class="item-title"><span class="item-nome"></span><span class="item-count" id="count-${itemId}">${textoContagem(n)}</span></div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn-capture" id="btn-${itemId}" onclick="dispararCaptura('${itemId}', 'camera')">
+                        ${isDone ? '✓ Salvo' : '📷 Foto'}
+                    </button>
+                    <button class="btn-capture btn-gallery" onclick="dispararCaptura('${itemId}', 'galeria')">🖼️ Galeria</button>
+                </div>
+                <input type="file" id="input-${itemId}-camera" accept="image/*" capture="environment">
+                <input type="file" id="input-${itemId}-galeria" accept="image/*" multiple>
+            `;
+            div.querySelector(".item-nome").textContent = itemText;
+            div.querySelector(`#input-${itemId}-camera`).addEventListener("change", ev => tratarArquivos(ev, { tipo: "item", itemId, itemText, origem: "camera" }));
+            div.querySelector(`#input-${itemId}-galeria`).addEventListener("change", ev => tratarArquivos(ev, { tipo: "item", itemId, itemText, origem: "galeria" }));
+            container.appendChild(div);
+        });
+
+        // Fotos extras (nome livre)
+        const extra = document.createElement("div");
+        extra.className = "checklist-item";
+        extra.style.flexWrap = "wrap";
+        extra.innerHTML = `
+            <div class="item-info" style="flex-basis:100%">
+                <div class="item-num">+</div>
+                <div class="item-title">FOTOS EXTRAS</div>
+            </div>
+            <input type="text" class="extra-input" id="extra-nome" maxlength="60" autocomplete="off" placeholder="Nome da foto extra (ex.: Caixa danificada)">
+            <div class="btn-group">
+                <button class="btn-capture" onclick="dispararCaptura('extra', 'camera')">📷 Foto</button>
+                <button class="btn-capture btn-gallery" onclick="dispararCaptura('extra', 'galeria')">🖼️ Galeria</button>
+            </div>
+            <div class="extra-lista" id="extra-lista"></div>
+            <input type="file" id="input-extra-camera" accept="image/*" capture="environment">
+            <input type="file" id="input-extra-galeria" accept="image/*" multiple>
+        `;
+        container.appendChild(extra);
+        extra.querySelector("#input-extra-camera").addEventListener("change", ev => tratarArquivos(ev, { tipo: "extra", origem: "camera" }));
+        extra.querySelector("#input-extra-galeria").addEventListener("change", ev => tratarArquivos(ev, { tipo: "extra", origem: "galeria" }));
+        renderListaExtras();
+    }
+
+    function renderListaExtras() {
+        const el = document.getElementById("extra-lista");
+        if (!el) return;
+        const prot = document.getElementById("protocolo").value.trim();
+        const lista = extrasSalvos[`${prot}_${currentKey}`] || {};
+        el.innerHTML = "";
+        Object.keys(lista).forEach(slug => {
+            const d = document.createElement("div");
+            d.textContent = `✓ ${lista[slug].nome} — ${textoContagem(lista[slug].n)}`;
+            el.appendChild(d);
+        });
+    }
+
+    function renderCriterios(criterios) {
+        const container = document.getElementById("criteria-container");
+        container.innerHTML = "";
+        criterios.forEach(c => {
+            const li = document.createElement("li");
+            li.innerText = c;
+            container.appendChild(li);
+        });
+    }
+
+    // ---------- Captura ----------
+    function dispararCaptura(itemId, origem) {
+        const prot = document.getElementById("protocolo").value.trim();
+        if (!prot) {
+            alert("Por favor, digite o NÚMERO DA O.S. / PROTOCOLO primeiro!");
+            return;
+        }
+        if (itemId === "extra") {
+            const nome = document.getElementById("extra-nome").value.trim();
+            if (!limparNome(nome)) {
+                alert("Digite um nome para a foto extra primeiro!");
+                document.getElementById("extra-nome").focus();
+                return;
+            }
+        }
+        document.getElementById(`input-${itemId}-${origem}`).click();
+    }
+
+    const esperar = ms => new Promise(r => setTimeout(r, ms));
+
+    async function tratarArquivos(event, ctx) {
+        const input = event.target;
+        const arquivos = Array.from(input.files || []);
+        const prot = document.getElementById("protocolo").value.trim();
+        if (!arquivos.length || !prot) { input.value = ""; return; }
+
+        // Para extras, fixa o nome no momento da seleção
+        let nomeExtra = "";
+        if (ctx.tipo === "extra") {
+            nomeExtra = document.getElementById("extra-nome").value.trim();
+            if (!limparNome(nomeExtra)) { input.value = ""; return; }
+        }
+
+        if (!latGlobal) await pegarPosicaoAgora(4000);
+
+        for (let i = 0; i < arquivos.length; i++) {
+            try {
+                await salvarUmaFoto(arquivos[i], ctx, prot, nomeExtra);
+            } catch (e) {
+                alert("Não foi possível processar uma das fotos.");
+            }
+            if (i < arquivos.length - 1) await esperar(500);
+        }
+        input.value = "";
+        atualizarProgresso();
+    }
+
+    function salvarUmaFoto(file, ctx, prot, nomeExtra) {
+        return new Promise((resolve, reject) => {
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("img")); };
+            img.onload = function() {
+                const rotulo = ctx.tipo === "extra" ? nomeExtra : ctx.itemText;
+
+                const canvas = document.createElement("canvas");
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const c = canvas.getContext("2d");
+                c.drawImage(img, 0, 0);
+                URL.revokeObjectURL(url);
+
+                const padding = Math.round(canvas.width * 0.03);
+                const fontSize = Math.max(24, Math.round(canvas.width * 0.035));
+                c.font = `bold ${fontSize}px sans-serif`;
+
+                // Foto da galeria: usa a data do arquivo; o GPS é o local atual do aparelho
+                const galeria = ctx.origem === "galeria";
+                const dataHora = (galeria && file.lastModified ? new Date(file.lastModified) : new Date()).toLocaleString("pt-BR");
+                const gpsTexto = (latGlobal && lonGlobal) ? `${latGlobal}, ${lonGlobal}` : "GPS não obtido";
+                const texto1 = `OS / PROTOCOLO: ${prot}`;
+                const texto2 = `${galeria ? "GPS atual" : "GPS"}: ${gpsTexto} | ${dataHora}`;
+                const texto3 = `LOCAL: ${rotulo}`;
+
+                const boxHeight = fontSize * 4.5;
+                const boxY = canvas.height - boxHeight - padding;
+
+                c.fillStyle = "rgba(0, 0, 0, 0.75)";
+                c.fillRect(padding, boxY, canvas.width - (padding * 2), boxHeight);
+
+                c.fillStyle = "#ffffff";
+                c.fillText(texto1, padding * 2, boxY + (fontSize * 1.2));
+                c.fillStyle = "#38bdf8";
+                c.fillText(texto2, padding * 2, boxY + (fontSize * 2.6));
+                c.fillStyle = "#10b981";
+                c.fillText(texto3, padding * 2, boxY + (fontSize * 4.0));
+
+                canvas.toBlob(function(blob) {
+                    if (!blob) { reject(new Error("blob")); return; }
+
+                    // Contador / sequência
+                    let n;
+                    let stateKey, slug;
+                    if (ctx.tipo === "extra") {
+                        slug = limparNome(nomeExtra);
+                        const grupo = `${prot}_${currentKey}`;
+                        extrasSalvos[grupo] = extrasSalvos[grupo] || {};
+                        const reg = extrasSalvos[grupo][slug] || { nome: nomeExtra, n: 0 };
+                        n = reg.n + 1;
+                    } else {
+                        stateKey = `${prot}_${currentKey}_${ctx.itemId}`;
+                        n = contagemItem(stateKey) + 1;
+                    }
+
+                    // Nome: ITEM[_(n)]_PROTOCOLO_CATEGORIA.jpg
+                    const itemNome = limparNome(rotulo) + (n > 1 ? `_(${n})` : "");
+                    const protNome = limparNome(prot);
+                    const catNome = limparNome(checklistsData[currentKey].title);
+                    const nomeArquivo = `${itemNome}_${protNome}_${catNome}.jpg`;
+
+                    const a = document.createElement("a");
+                    const href = URL.createObjectURL(blob);
+                    a.href = href;
+                    a.download = nomeArquivo;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(() => URL.revokeObjectURL(href), 60000);
+
+                    // Salva progresso
+                    if (ctx.tipo === "extra") {
+                        const grupo = `${prot}_${currentKey}`;
+                        extrasSalvos[grupo][slug] = { nome: nomeExtra, n: n };
+                        gravarJSON("checklist_extras", extrasSalvos);
+                        renderListaExtras();
+                    } else {
+                        completedItems[stateKey] = n;
+                        gravarJSON("checklist_completos", completedItems);
+                        const card = document.getElementById(`card-${ctx.itemId}`);
+                        const btn = document.getElementById(`btn-${ctx.itemId}`);
+                        const cnt = document.getElementById(`count-${ctx.itemId}`);
+                        if (card) card.classList.add("done");
+                        if (btn) btn.innerText = "✓ Salvo";
+                        if (cnt) cnt.innerText = textoContagem(n);
+                    }
+                    resolve();
+                }, "image/jpeg", 0.90);
+            };
+            img.src = url;
+        });
+    }
+
+    function atualizarEstadoBotoes() {
+        const prot = document.getElementById("protocolo").value.trim();
+        const select = document.getElementById("historico-select");
+        if(prot && select) select.value = "";
+    }
+
+    function atualizarProgresso() {
+        if (!currentKey) return;
+        const prot = document.getElementById("protocolo").value.trim();
+        const total = checklistsData[currentKey].items.length;
+        let concluidos = 0;
+
+        checklistsData[currentKey].items.forEach((_, idx) => {
+            const stateKey = `${prot}_${currentKey}_item_${idx}`;
+            if (contagemItem(stateKey) > 0) concluidos++;
+        });
+
+        const porcentagem = Math.round((concluidos / total) * 100);
+        const textEl = document.getElementById("progress-text");
+        const fillEl = document.getElementById("progress-fill");
+
+        if (textEl) textEl.innerText = `${concluidos} / ${total} (${porcentagem}%)`;
+        if (fillEl) fillEl.style.width = `${porcentagem}%`;
+    }
+
+    // Modo offline (só funciona em https, como no GitHub Pages)
+    if ('serviceWorker' in navigator && location.protocol === 'https:') {
+        window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+
+    iniciarGPS();
+    renderMenu();
+</script>
+
+</body>
+</html>
