@@ -316,6 +316,13 @@
         .extra-lista { flex-basis: 100%; font-size: 0.72rem; color: var(--text-muted); line-height: 1.5; }
         .gps-status { cursor: pointer; }
 
+        /* Botões Foto/Galeria mantêm o tamanho; o texto do item é quem quebra de linha */
+        .checklist-item { gap: 8px; }
+        .item-info { min-width: 0; gap: 8px; }
+        .item-title { flex: 1; min-width: 0; font-size: 0.8rem; overflow-wrap: break-word; -webkit-hyphens: auto; hyphens: auto; }
+        .btn-group { gap: 4px; }
+        .btn-group .btn-capture { white-space: nowrap; justify-content: center; }
+
         input[type="file"] {
             display: none;
         }
@@ -530,29 +537,66 @@
     }
 
     // ---------- Histórico ----------
+    function registrarHistorico(prot, cat) {
+        const h = lerJSON("checklist_historico");
+        h[prot + "||" + cat] = { prot: prot, cat: cat, ts: Date.now() };
+        gravarJSON("checklist_historico", h);
+    }
+
+    // Junta o histórico novo com o que já existia salvo de versões anteriores
+    function montarHistorico() {
+        const h = lerJSON("checklist_historico");
+        const cats = Object.keys(checklistsData);
+
+        function incluir(base) {
+            const cat = cats.find(c => base.endsWith("_" + c));
+            if (!cat) return;
+            const prot = base.slice(0, base.length - cat.length - 1);
+            if (prot && !h[prot + "||" + cat]) h[prot + "||" + cat] = { prot: prot, cat: cat, ts: 0 };
+        }
+        Object.keys(completedItems).forEach(key => {
+            const m = key.match(/^(.*)_item_\d+$/);
+            if (m) incluir(m[1]);
+        });
+        Object.keys(extrasSalvos).forEach(incluir);
+        return h;
+    }
+
     function carregarHistoricoSelect() {
         const select = document.getElementById("historico-select");
         if (!select) return;
         select.innerHTML = '<option value="">-- Histórico de Protocolos --</option>';
 
-        let protocolosSalvos = new Set();
-        Object.keys(completedItems).concat(Object.keys(extrasSalvos)).forEach(key => {
-            let parts = key.split("_");
-            if (parts.length > 0 && parts[0]) protocolosSalvos.add(parts[0]);
-        });
+        const h = montarHistorico();
+        const lista = Object.keys(h).map(k => h[k]).filter(e => checklistsData[e.cat]);
+        lista.sort((x, y) => (y.ts || 0) - (x.ts || 0));
 
-        protocolosSalvos.forEach(prot => {
-            let opt = document.createElement("option");
-            opt.value = prot;
-            opt.innerText = `Protocolo: ${prot}`;
+        lista.forEach(e => {
+            const dados = checklistsData[e.cat];
+            let feitas = 0;
+            dados.items.forEach((_, idx) => {
+                if (contagemItem(`${e.prot}_${e.cat}_item_${idx}`) > 0) feitas++;
+            });
+            let texto = `${e.prot} • ${dados.title} • ${feitas}/${dados.items.length} fotos`;
+            if (e.ts) texto += " • " + new Date(e.ts).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+
+            const opt = document.createElement("option");
+            opt.value = e.prot + "||" + e.cat;
+            opt.innerText = texto;
             select.appendChild(opt);
         });
     }
 
+    // Ao escolher um item do histórico: preenche o protocolo e já abre a categoria certa
     function carregarProtocoloAntigo(val) {
         if (!val) return;
-        document.getElementById("protocolo").value = val;
-        atualizarEstadoBotoes();
+        const pos = val.lastIndexOf("||");
+        const prot = pos >= 0 ? val.slice(0, pos) : val;
+        const cat = pos >= 0 ? val.slice(pos + 2) : "";
+        document.getElementById("protocolo").value = prot;
+        const select = document.getElementById("historico-select");
+        if (select) select.value = "";
+        if (cat && checklistsData[cat]) abrirChecklist(cat);
     }
 
     function renderMenu() {
@@ -825,10 +869,12 @@
                         const grupo = `${prot}_${currentKey}`;
                         extrasSalvos[grupo][slug] = { nome: nomeExtra, n: n };
                         gravarJSON("checklist_extras", extrasSalvos);
+                        registrarHistorico(prot, currentKey);
                         renderListaExtras();
                     } else {
                         completedItems[stateKey] = n;
                         gravarJSON("checklist_completos", completedItems);
+                        registrarHistorico(prot, currentKey);
                         const card = document.getElementById(`card-${ctx.itemId}`);
                         const btn = document.getElementById(`btn-${ctx.itemId}`);
                         const cnt = document.getElementById(`count-${ctx.itemId}`);
