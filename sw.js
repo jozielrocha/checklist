@@ -1,6 +1,6 @@
 // Service worker: guarda o app no aparelho para funcionar sem internet.
 // Ao publicar uma versão nova, aumente o número em VERSAO.
-const VERSAO = "v2";
+const VERSAO = "v3";
 const CACHE = "checklist-ftth-" + VERSAO;
 const ARQUIVOS = [
   "./",

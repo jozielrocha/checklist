@@ -316,13 +316,13 @@
         .extra-lista { flex-basis: 100%; font-size: 0.72rem; color: var(--text-muted); line-height: 1.5; }
         .gps-status { cursor: pointer; }
 
-        /* Botões Foto/Galeria mantêm o tamanho; o texto do item é quem quebra de linha */
-        .checklist-item { gap: 8px; }
-        .item-info { min-width: 0; gap: 8px; }
-        .item-title { flex: 1; min-width: 0; font-size: 0.8rem; overflow-wrap: break-word; -webkit-hyphens: auto; hyphens: auto; }
-        .btn-group { gap: 4px; }
-        .btn-group .btn-capture { white-space: nowrap; justify-content: center; }
-
+        /* Título em cima; botões Foto (esquerda) e Galeria (direita) embaixo, ocupando a largura do cartão */
+        .checklist-item { flex-wrap: wrap; gap: 10px; }
+        .item-info { flex: 1 1 100%; min-width: 0; }
+        .item-title { flex: 1; min-width: 0; overflow-wrap: break-word; }
+        .btn-group { flex: 1 1 100%; width: 100%; gap: 10px; }
+        .btn-group .btn-capture { flex: 1; justify-content: center; white-space: nowrap; padding: 10px 12px; }
+        .extra-input { flex: 1 1 100%; }
         input[type="file"] {
             display: none;
         }
