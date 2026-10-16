@@ -2,7 +2,7 @@
 
 Aplicativo web para técnicos em campo: guia o atendimento por categoria, tira as fotos exigidas e salva cada uma **no próprio celular**, já com o **nome padronizado** e uma **marca d'água** com protocolo, localização (GPS), data e hora.
 
-🔗 **Acesse:** https://SEU-USUARIO.github.io/checklist/ <!-- troque pelo seu link -->
+🔗 **Acesse:** https://jozielrocha.github.io/checklist/
 
 ---
 
