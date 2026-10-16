@@ -323,6 +323,34 @@
         .btn-group { flex: 1 1 100%; width: 100%; gap: 10px; }
         .btn-group .btn-capture { flex: 1; justify-content: center; white-space: nowrap; padding: 10px 12px; }
         .extra-input { flex: 1 1 100%; }
+
+        /* Subtítulo do item (contagem + refazer), botão finalizar, avisos e janelas */
+        .item-sub { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 2px; }
+        .item-sub .item-count { display: inline; margin-top: 0; }
+        .btn-reset { background: none; border: none; color: var(--text-muted); font-size: 0.7rem; text-decoration: underline; padding: 2px 0; cursor: pointer; }
+        .extra-linha { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .btn-finalizar { width: 100%; justify-content: center; padding: 12px; }
+        .toast {
+            position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+            max-width: 92%; background: var(--card-bg); color: var(--text-main); border: 1px solid var(--accent-green);
+            border-radius: 10px; padding: 10px 14px; font-size: 0.8rem; font-weight: 600; z-index: 1100;
+            word-break: break-all; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+        .toast.erro { border-color: #f87171; }
+        .modal-fundo { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
+        .modal-caixa { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; width: 100%; max-width: 420px; max-height: 80vh; display: flex; flex-direction: column; gap: 10px; }
+        .modal-titulo { font-size: 1rem; font-weight: 700; color: var(--text-main); }
+        .modal-texto { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }
+        .modal-lista { margin: 0; padding-left: 18px; overflow-y: auto; font-size: 0.8rem; color: var(--text-main); line-height: 1.6; }
+        .modal-botoes { display: flex; gap: 10px; margin-top: 4px; }
+        .modal-botoes .btn-capture { flex: 1; justify-content: center; padding: 10px 12px; }
+        .banner-atualizacao {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1200; background: var(--accent-blue); color: #fff;
+            padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px; display: flex; align-items: center;
+            justify-content: space-between; gap: 10px; font-size: 0.8rem; font-weight: 600;
+        }
+        .banner-atualizacao button { background: #fff; color: var(--accent-blue); border: none; border-radius: 6px; padding: 6px 12px; font-weight: 700; font-size: 0.8rem; cursor: pointer; }
+        .banner-atualizacao .fechar { background: transparent; color: #fff; padding: 6px; font-size: 1rem; }
         input[type="file"] {
             display: none;
         }
@@ -493,6 +521,196 @@
         if (mudou) gravarJSON("checklist_completos", completedItems);
     }
     migrarProgressoAntigo();
+
+    // ---------- Avisos e janelas ----------
+    let temporizadorToast = null;
+    function mostrarToast(texto, tipo) {
+        const antigo = document.querySelector(".toast");
+        if (antigo) antigo.remove();
+        clearTimeout(temporizadorToast);
+        const t = document.createElement("div");
+        t.className = "toast" + (tipo === "erro" ? " erro" : "");
+        t.textContent = texto;
+        document.body.appendChild(t);
+        temporizadorToast = setTimeout(() => t.remove(), tipo === "erro" ? 4000 : 2500);
+    }
+
+    function abrirModal(op) {
+        return new Promise(resolve => {
+            const fundo = document.createElement("div");
+            fundo.className = "modal-fundo";
+            const caixa = document.createElement("div");
+            caixa.className = "modal-caixa";
+
+            const h = document.createElement("div");
+            h.className = "modal-titulo";
+            h.textContent = op.titulo;
+            caixa.appendChild(h);
+
+            if (op.texto) {
+                const p = document.createElement("div");
+                p.className = "modal-texto";
+                p.textContent = op.texto;
+                caixa.appendChild(p);
+            }
+            if (op.lista && op.lista.length) {
+                const ul = document.createElement("ul");
+                ul.className = "modal-lista";
+                op.lista.forEach(t => { const li = document.createElement("li"); li.textContent = t; ul.appendChild(li); });
+                caixa.appendChild(ul);
+            }
+
+            const bots = document.createElement("div");
+            bots.className = "modal-botoes";
+            op.botoes.forEach(b => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "btn-capture" + (b.secundario ? " btn-gallery" : "");
+                btn.textContent = b.texto;
+                btn.onclick = () => { fundo.remove(); resolve(b.valor); };
+                bots.appendChild(btn);
+            });
+            caixa.appendChild(bots);
+
+            fundo.addEventListener("click", ev => { if (ev.target === fundo) { fundo.remove(); resolve(null); } });
+            fundo.appendChild(caixa);
+            document.body.appendChild(fundo);
+        });
+    }
+
+    function confirmar(titulo, texto, textoOk) {
+        return abrirModal({
+            titulo: titulo, texto: texto,
+            botoes: [{ texto: "Cancelar", secundario: true, valor: false }, { texto: textoOk || "Confirmar", valor: true }]
+        }).then(v => v === true);
+    }
+
+    function mostrarAvisoAtualizacao() {
+        if (document.querySelector(".banner-atualizacao")) return;
+        const b = document.createElement("div");
+        b.className = "banner-atualizacao";
+        const msg = document.createElement("span");
+        msg.textContent = "🔄 Nova versão disponível";
+        const acoes = document.createElement("span");
+        const atualizar = document.createElement("button");
+        atualizar.type = "button";
+        atualizar.textContent = "Atualizar";
+        atualizar.onclick = () => location.reload();
+        const fechar = document.createElement("button");
+        fechar.type = "button";
+        fechar.className = "fechar";
+        fechar.textContent = "✕";
+        fechar.setAttribute("aria-label", "Fechar aviso");
+        fechar.onclick = () => b.remove();
+        acoes.appendChild(atualizar);
+        acoes.appendChild(fechar);
+        b.appendChild(msg);
+        b.appendChild(acoes);
+        document.body.appendChild(b);
+    }
+
+    // ---------- Histórico: apaga protocolos sem uso há mais de 7 dias ----------
+    const DIAS_HISTORICO = 7;
+
+    function limparHistoricoAntigo() {
+        const limite = Date.now() - DIAS_HISTORICO * 24 * 60 * 60 * 1000;
+        const h = montarHistorico();          // inclui registros antigos que ainda não tinham data
+        let mudou = false;
+        Object.keys(h).forEach(chave => {
+            const e = h[chave];
+            if (!e.ts) { e.ts = Date.now(); mudou = true; return; }   // sem data: passa a contar a partir de agora
+            if (e.ts < limite) {
+                const prefixo = e.prot + "_" + e.cat + "_";
+                Object.keys(completedItems).forEach(k => { if (k.startsWith(prefixo)) delete completedItems[k]; });
+                delete extrasSalvos[e.prot + "_" + e.cat];
+                delete h[chave];
+                mudou = true;
+            }
+        });
+        if (mudou) {
+            gravarJSON("checklist_historico", h);
+            gravarJSON("checklist_completos", completedItems);
+            gravarJSON("checklist_extras", extrasSalvos);
+        }
+    }
+
+    // ---------- Refazer (zerar) um item ----------
+    function desenharSubItem(itemId, itemText, n) {
+        const sub = document.getElementById(`sub-${itemId}`);
+        if (!sub) return;
+        sub.innerHTML = "";
+        if (n <= 0) return;
+        const cnt = document.createElement("span");
+        cnt.className = "item-count";
+        cnt.textContent = textoContagem(n);
+        const bt = document.createElement("button");
+        bt.type = "button";
+        bt.className = "btn-reset";
+        bt.textContent = "↺ Refazer";
+        bt.onclick = () => zerarItem(itemId, itemText);
+        sub.appendChild(cnt);
+        sub.appendChild(bt);
+    }
+
+    async function zerarItem(itemId, itemText) {
+        const prot = document.getElementById("protocolo").value.trim();
+        const ok = await confirmar(
+            "Refazer este item?",
+            `A contagem de "${itemText}" volta a zero e a próxima foto será a primeira. As fotos já salvas no celular NÃO são apagadas (a nova pode sair com o mesmo nome; o Android costuma acrescentar "(1)").`,
+            "Zerar"
+        );
+        if (!ok) return;
+        delete completedItems[chaveItem(prot, currentKey, itemText)];
+        gravarJSON("checklist_completos", completedItems);
+        const card = document.getElementById(`card-${itemId}`);
+        const btn = document.getElementById(`btn-${itemId}`);
+        if (card) card.classList.remove("done");
+        if (btn) btn.innerText = "📷 Foto";
+        desenharSubItem(itemId, itemText, 0);
+        atualizarProgresso();
+        mostrarToast("Item zerado");
+    }
+
+    async function zerarExtra(slug, nome) {
+        const prot = document.getElementById("protocolo").value.trim();
+        const ok = await confirmar(
+            "Remover esta foto extra da lista?",
+            `"${nome}" sai da lista de extras deste protocolo. As fotos já salvas no celular NÃO são apagadas.`,
+            "Remover"
+        );
+        if (!ok) return;
+        const grupo = `${prot}_${currentKey}`;
+        if (extrasSalvos[grupo]) delete extrasSalvos[grupo][slug];
+        gravarJSON("checklist_extras", extrasSalvos);
+        renderListaExtras();
+    }
+
+    // ---------- Finalizar: mostra o que falta ----------
+    async function finalizarAtendimento() {
+        const prot = document.getElementById("protocolo").value.trim();
+        const dados = checklistsData[currentKey];
+        const pendentes = dados.items.filter(t => contagemItem(chaveItem(prot, currentKey, t)) === 0);
+        const extras = extrasSalvos[`${prot}_${currentKey}`] || {};
+        const totalExtras = Object.keys(extras).reduce((soma, k) => soma + (extras[k].n || 0), 0);
+        const textoExtras = totalExtras ? ` Fotos extras: ${totalExtras}.` : "";
+
+        if (pendentes.length === 0) {
+            const r = await abrirModal({
+                titulo: "✅ Tudo pronto!",
+                texto: `Todas as ${dados.items.length} fotos do protocolo ${prot} foram feitas.${textoExtras}`,
+                botoes: [{ texto: "Continuar aqui", secundario: true, valor: "ficar" }, { texto: "Voltar ao menu", valor: "menu" }]
+            });
+            if (r === "menu") voltarMenu();
+        } else {
+            const r = await abrirModal({
+                titulo: `Faltam ${pendentes.length} ${pendentes.length === 1 ? "foto" : "fotos"}`,
+                texto: "Itens ainda sem foto:",
+                lista: pendentes,
+                botoes: [{ texto: "Sair assim mesmo", secundario: true, valor: "menu" }, { texto: "Voltar e tirar", valor: "ficar" }]
+            });
+            if (r === "menu") voltarMenu();
+        }
+    }
 
     // ---------- GPS ----------
     function definirPosicao(pos) {
@@ -700,7 +918,7 @@
             div.innerHTML = `
                 <div class="item-info">
                     <div class="item-num">${idx + 1}</div>
-                    <div class="item-title"><span class="item-nome"></span><span class="item-count" id="count-${itemId}">${textoContagem(n)}</span></div>
+                    <div class="item-title"><span class="item-nome"></span><span class="item-sub" id="sub-${itemId}"></span></div>
                 </div>
                 <div class="btn-group">
                     <button class="btn-capture" id="btn-${itemId}" onclick="dispararCaptura('${itemId}', 'camera')">
@@ -715,6 +933,7 @@
             div.querySelector(`#input-${itemId}-camera`).addEventListener("change", ev => tratarArquivos(ev, { tipo: "item", itemId, itemText, origem: "camera" }));
             div.querySelector(`#input-${itemId}-galeria`).addEventListener("change", ev => tratarArquivos(ev, { tipo: "item", itemId, itemText, origem: "galeria" }));
             container.appendChild(div);
+            desenharSubItem(itemId, itemText, n);
         });
 
         // Fotos extras (nome livre)
@@ -739,6 +958,13 @@
         extra.querySelector("#input-extra-camera").addEventListener("change", ev => tratarArquivos(ev, { tipo: "extra", origem: "camera" }));
         extra.querySelector("#input-extra-galeria").addEventListener("change", ev => tratarArquivos(ev, { tipo: "extra", origem: "galeria" }));
         renderListaExtras();
+
+        const fin = document.createElement("button");
+        fin.type = "button";
+        fin.className = "btn-capture btn-finalizar";
+        fin.textContent = "✅ Finalizar / conferir pendências";
+        fin.onclick = finalizarAtendimento;
+        container.appendChild(fin);
     }
 
     function renderListaExtras() {
@@ -749,7 +975,16 @@
         el.innerHTML = "";
         Object.keys(lista).forEach(slug => {
             const d = document.createElement("div");
-            d.textContent = `✓ ${lista[slug].nome} — ${textoContagem(lista[slug].n)}`;
+            d.className = "extra-linha";
+            const t = document.createElement("span");
+            t.textContent = `✓ ${lista[slug].nome} — ${textoContagem(lista[slug].n)}`;
+            const bt = document.createElement("button");
+            bt.type = "button";
+            bt.className = "btn-reset";
+            bt.textContent = "↺ Refazer";
+            bt.onclick = () => zerarExtra(slug, lista[slug].nome);
+            d.appendChild(t);
+            d.appendChild(bt);
             el.appendChild(d);
         });
     }
@@ -803,7 +1038,7 @@
             try {
                 await salvarUmaFoto(arquivos[i], ctx, prot, nomeExtra);
             } catch (e) {
-                alert("Não foi possível processar uma das fotos.");
+                mostrarToast("Não foi possível processar uma das fotos.", "erro");
             }
             if (i < arquivos.length - 1) await esperar(500);
         }
@@ -846,6 +1081,15 @@
 
                 c.fillStyle = "#ffffff";
                 c.fillText(texto1, padding * 2, boxY + (fontSize * 1.2));
+
+                // Etiqueta de origem na 1ª linha: verde = tirada no app, âmbar = escolhida da galeria
+                const etiqueta = galeria ? "DA GALERIA" : "TIRADA NO APP";
+                const larguraEtiqueta = c.measureText(etiqueta).width;
+                const fimTexto1 = padding * 2 + c.measureText(texto1).width;
+                const xEtiqueta = canvas.width - padding * 2 - larguraEtiqueta;
+                c.fillStyle = galeria ? "#f59e0b" : "#10b981";
+                c.fillText(etiqueta, xEtiqueta > fimTexto1 + fontSize ? xEtiqueta : fimTexto1 + fontSize, boxY + (fontSize * 1.2));
+
                 c.fillStyle = "#38bdf8";
                 c.fillText(texto2, padding * 2, boxY + (fontSize * 2.6));
                 c.fillStyle = "#10b981";
@@ -882,6 +1126,7 @@
                     a.click();
                     document.body.removeChild(a);
                     setTimeout(() => URL.revokeObjectURL(href), 60000);
+                    mostrarToast("✓ Salvo: " + nomeArquivo);
 
                     // Salva progresso
                     if (ctx.tipo === "extra") {
@@ -896,10 +1141,9 @@
                         registrarHistorico(prot, currentKey);
                         const card = document.getElementById(`card-${ctx.itemId}`);
                         const btn = document.getElementById(`btn-${ctx.itemId}`);
-                        const cnt = document.getElementById(`count-${ctx.itemId}`);
                         if (card) card.classList.add("done");
                         if (btn) btn.innerText = "✓ Salvo";
-                        if (cnt) cnt.innerText = textoContagem(n);
+                        desenharSubItem(ctx.itemId, ctx.itemText, n);
                     }
                     resolve();
                 }, "image/jpeg", 0.90);
@@ -932,15 +1176,27 @@
         if (fillEl) fillEl.style.width = `${porcentagem}%`;
     }
 
-    // Modo offline (só funciona em https, como no GitHub Pages)
+    // Modo offline e aviso de nova versão (só funciona em https, como no GitHub Pages)
     if ('serviceWorker' in navigator && location.protocol === 'https:') {
-        window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+        const jaTinhaControlador = !!navigator.serviceWorker.controller;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (jaTinhaControlador) mostrarAvisoAtualizacao();   // na 1ª instalação não avisa
+        });
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').then(reg => {
+                const procurar = () => { try { reg.update(); } catch (e) {} };
+                document.addEventListener('visibilitychange', () => { if (!document.hidden) procurar(); });
+                window.addEventListener('online', procurar);
+                setInterval(procurar, 30 * 60 * 1000);
+            }).catch(() => {});
+        });
     }
 
     if (typeof checklistsData === "undefined") {
         const grid = document.getElementById("menu-grid");
         if (grid) grid.innerHTML = '<p style="padding:16px;color:#f87171;font-weight:600;">⚠️ Não foi possível carregar a lista de checklists (checklists.js). Verifique o arquivo e tente de novo.</p>';
     } else {
+        limparHistoricoAntigo();
         iniciarGPS();
         renderMenu();
     }

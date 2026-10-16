@@ -12,8 +12,12 @@ Aplicativo web para técnicos em campo: guia o atendimento por categoria, tira a
 - Cada item tem os botões **📷 Foto** (câmera) e **🖼️ Galeria** (escolher foto já salva no aparelho).
 - **Várias fotos por item**, com nome em sequência.
 - **Fotos extras** em cada categoria, com nome livre digitado pelo técnico.
-- Marca d'água na imagem: **OS/Protocolo**, **GPS**, **data/hora** e **local (item)**.
-- **Histórico de protocolos**: mostra protocolo, categoria e andamento, e ao selecionar já abre a categoria certa.
+- Marca d'água na imagem: **OS/Protocolo**, **GPS**, **data/hora**, **local (item)** e uma etiqueta de origem: **TIRADA NO APP** ou **DA GALERIA**.
+- **Aviso "✓ Salvo: nome-do-arquivo"** a cada foto.
+- **Finalizar / conferir pendências**: lista os itens que ainda estão sem foto antes de sair.
+- **Refazer**: zera a contagem de um item (ou remove um extra da lista) quando a foto saiu errada.
+- **Histórico de protocolos**: mostra protocolo, categoria e andamento, e ao selecionar já abre a categoria certa. Protocolos sem uso há mais de **7 dias** saem do histórico automaticamente.
+- **Aviso de nova versão**: quando há atualização, aparece uma faixa "Nova versão disponível" com o botão *Atualizar*.
 - **Funciona offline** depois de instalado (PWA).
 - Barra de progresso por categoria.
 
@@ -25,6 +29,8 @@ Aplicativo web para técnicos em campo: guia o atendimento por categoria, tira a
 4. Escolha o tipo de atendimento.
 5. Em cada item, toque em **Foto** ou **Galeria**. A imagem é salva na pasta de **Downloads** do aparelho.
 6. No fim da lista, use **Fotos Extras** para o que não estiver previsto (digite o nome antes de tirar a foto).
+7. Toque em **Finalizar / conferir pendências** para ver se falta alguma foto.
+8. Tirou a foto errada? Em **↺ Refazer**, a contagem do item volta a zero (as fotos já salvas no celular não são apagadas).
 
 ### Nome dos arquivos
 
@@ -35,12 +41,12 @@ ITEM_(2)_PROTOCOLO_CATEGORIA.jpg      ← segunda foto do mesmo item
 
 Exemplo: `ANEXO_IPV6_123456_ATIVACAO_FTTH.jpg`
 
-> Fotos escolhidas da **Galeria** usam a data do arquivo; o GPS gravado é o do local onde o aparelho está **naquele momento** (a marca d'água indica "GPS atual").
+> Fotos escolhidas da **Galeria** recebem a etiqueta **DA GALERIA**, usam a data do arquivo e gravam o GPS do local onde o aparelho está **naquele momento** (a marca d'água indica "GPS atual"). Fotos feitas pelo app recebem **TIRADA NO APP**.
 
 ## Privacidade
 
 - O app roda **100% no aparelho**. Nenhuma foto, protocolo ou localização é enviada a servidores.
-- O progresso e o histórico ficam guardados **no navegador de cada aparelho**. Limpar os dados do navegador apaga esse histórico (as fotos já salvas em Downloads continuam).
+- O progresso e o histórico ficam guardados **no navegador de cada aparelho** e são apagados automaticamente após 7 dias sem uso do protocolo. Limpar os dados do navegador também apaga o histórico (as fotos já salvas em Downloads continuam).
 
 ## Para quem mantém o projeto
 
@@ -54,13 +60,21 @@ Tudo fica no arquivo **`checklists.js`** (não é preciso mexer no `index.html`)
 
 Depois: *commit* e *push*. Em 1 a 2 minutos o GitHub Pages publica, e os aparelhos se atualizam ao abrir o app com internet.
 
+### Avisar os aparelhos de uma nova versão
+
+A cada atualização publicada, aumente o número em `VERSAO` na primeira linha do `sw.js` (ex.: `"1.0.0"` → `"1.0.1"`). Os aparelhos que estiverem com o app aberto mostram a faixa **"Nova versão disponível"**. Sem isso, a atualização ainda chega, mas só na próxima vez que o app for aberto com internet.
+
+### Ajustar o tempo do histórico
+
+Em `index.html`, procure `DIAS_HISTORICO` (padrão: 7).
+
 ### Estrutura dos arquivos
 
 | Arquivo | Função |
 |---|---|
 | `index.html` | O aplicativo (tela, câmera/galeria, marca d'água, GPS, histórico) |
 | `checklists.js` | Categorias e itens de cada checklist |
-| `sw.js` | Service worker: permite usar offline e atualizar sozinho |
+| `sw.js` | Service worker: uso offline, atualização e número da versão |
 | `manifest.json` | Dados para instalar como app (nome, cores, ícones) |
 | `icon-*.png` | Ícones do app |
 

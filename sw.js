@@ -1,7 +1,9 @@
 // Service worker: guarda o app no aparelho para funcionar sem internet.
 // index.html e checklists.js são buscados na rede primeiro (limite de 4 s) e usam a cópia
-// do aparelho se não houver sinal. Assim, atualizar a lista NÃO exige mexer neste arquivo.
-const VERSAO = "v4";
+// do aparelho se não houver sinal.
+// AO PUBLICAR UMA ATUALIZAÇÃO: aumente o número em VERSAO (ex.: "1.0.1").
+// Isso faz aparecer o aviso "Nova versão disponível" nos aparelhos que estiverem com o app aberto.
+const VERSAO = "1.0.0";
 const CACHE = "checklist-ftth-" + VERSAO;
 const ARQUIVOS = [
   "./",
