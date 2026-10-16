@@ -2,7 +2,7 @@
 
 Aplicativo web para técnicos em campo: guia o atendimento por categoria, tira as fotos exigidas e salva cada uma **no próprio celular**, já com o **nome padronizado** e uma **marca d'água** com protocolo, localização (GPS), data e hora.
 
-🔗 **Acesse:** https://jozielrocha.github.io/checklist/
+🔗 **Acesse:** https://SEU-USUARIO.github.io/checklist/ <!-- troque pelo seu link -->
 
 ---
 
@@ -74,8 +74,10 @@ Depois: *commit* e *push*. Em 1 a 2 minutos o GitHub Pages publica, e os aparelh
 - Em locais fechados, o GPS pode demorar a conectar.
 - Cada aparelho guarda o próprio progresso; não há sincronização entre aparelhos.
 
-## Direitos autorais
+## Licença e créditos
 
-© 2026 — Desenvolvido por **Joziel Rocha**. Todos os direitos reservados.
+© 2026 — Desenvolvido por **Joziel Rocha**.
 
-O código está público para consulta e demonstração. **Cópia, modificação, redistribuição ou uso comercial dependem de autorização por escrito do autor.**
+Projeto de código aberto sob a **[Licença MIT](LICENSE)**: você pode usar, copiar, modificar e distribuir, inclusive em uso comercial, desde que **mantenha o aviso de copyright e a licença** em todas as cópias.
+
+Se usar ou adaptar este projeto, por favor **mantenha o crédito ao autor**. 🙏
