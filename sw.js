@@ -1,10 +1,12 @@
 // Service worker: guarda o app no aparelho para funcionar sem internet.
-// Ao publicar uma versão nova, aumente o número em VERSAO.
-const VERSAO = "v3";
+// index.html e checklists.js são buscados na rede primeiro (limite de 4 s) e usam a cópia
+// do aparelho se não houver sinal. Assim, atualizar a lista NÃO exige mexer neste arquivo.
+const VERSAO = "v4";
 const CACHE = "checklist-ftth-" + VERSAO;
 const ARQUIVOS = [
   "./",
   "./index.html",
+  "./checklists.js",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",
@@ -23,19 +25,36 @@ self.addEventListener("activate", e => {
   );
 });
 
-// Abre do cache (rápido/offline) e atualiza em segundo plano quando há internet.
+async function redePrimeiro(req) {
+  const cache = await caches.open(CACHE);
+  try {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), 4000);
+    const resp = await fetch(req, { cache: "no-cache", signal: ctl.signal });
+    clearTimeout(t);
+    if (resp && resp.ok) cache.put(req, resp.clone());
+    return resp;
+  } catch (err) {
+    const copia = (await cache.match(req, { ignoreSearch: true })) ||
+      (req.mode === "navigate" ? await cache.match("./index.html") : undefined);
+    return copia || Response.error();
+  }
+}
+
+async function cachePrimeiro(req) {
+  const cache = await caches.open(CACHE);
+  const copia = await cache.match(req, { ignoreSearch: true });
+  if (copia) return copia;
+  const resp = await fetch(req);
+  if (resp && resp.ok) cache.put(req, resp.clone());
+  return resp;
+}
+
 self.addEventListener("fetch", e => {
-  if (e.request.method !== "GET") return;
-  e.respondWith(
-    caches.match(e.request, { ignoreSearch: true }).then(emCache => {
-      const rede = fetch(e.request).then(resp => {
-        if (resp && resp.ok && new URL(e.request.url).origin === location.origin) {
-          const copia = resp.clone();
-          caches.open(CACHE).then(c => c.put(e.request, copia));
-        }
-        return resp;
-      }).catch(() => emCache || (e.request.mode === "navigate" ? caches.match("./index.html") : undefined));
-      return emCache || rede;
-    })
-  );
+  const req = e.request;
+  if (req.method !== "GET") return;
+  const url = new URL(req.url);
+  if (url.origin !== location.origin) return;
+  const dinamico = req.mode === "navigate" || /(\/|index\.html|checklists\.js|manifest\.json)$/.test(url.pathname);
+  e.respondWith(dinamico ? redePrimeiro(req) : cachePrimeiro(req));
 });
