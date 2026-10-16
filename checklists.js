@@ -23,7 +23,7 @@ const checklistsData = {
     "title": "ATIVAÇÃO FTTH",
     "icon": "🌐",
     "items": [
-      "ANEXO IPV6",
+      "ANEXO IPV6 e IPv4",
       "ANEXO EQUIPAMENTO INSTALADO",
       "ANEXO ORGANIZAÇÃO CTO",
       "ANEXO PING",
