@@ -21,7 +21,8 @@
     "checklist-iniciado",
     "foto-salva",
     "checklist-finalizado",
-    "app-instalado"
+    "app-instalado",
+    "navegador-interno"
   ];
   var ALLOWED_PATTERNS = [/^versao-[0-9]+(\.[0-9]+)*$/];
 

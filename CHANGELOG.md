@@ -1,5 +1,15 @@
 # Histórico de versões
 
+## v1.0.1 — Outubro/2026
+
+Correções a partir dos primeiros testes em campo.
+
+- **Aviso de navegador interno:** quando o app é aberto pelo Instagram/Facebook, mostra como abrir no Chrome ou Safari (botões "Copiar link" e, no Android, "Abrir no Chrome").
+- **Botão voltar do celular** agora volta ao menu, em vez de fechar a página.
+- **Fotos grandes da galeria:** a imagem é reduzida (até 2048 px) antes de receber a marca d'água, o que evita falhas em celulares com câmera de 50 MP. Mensagens de erro agora explicam o motivo (formato não suportado ou foto grande demais).
+- **Marca d'água em imagens pequenas:** o texto se ajusta à largura e à altura da imagem e não é mais cortado.
+- Novo evento anônimo `navegador-interno` no contador, para saber quantos acessos chegam por navegadores de redes sociais.
+
 ## v1.0.0 — Outubro/2026
 
 Primeira versão pública.

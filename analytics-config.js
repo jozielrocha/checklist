@@ -13,5 +13,5 @@ window.ANALYTICS_CONFIG = {
   scriptSrc: "https://gc.zgo.at/count.js",
   // Versão do app (usada só para saber quantos já atualizaram).
   // Mantenha igual ao VERSAO do sw.js a cada atualização publicada.
-  appVersion: "1.0.0"
+  appVersion: "1.0.1"
 };

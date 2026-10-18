@@ -2,7 +2,7 @@
 
 Aplicativo web para técnicos em campo: guia o atendimento por categoria, tira as fotos exigidas e salva cada uma **no próprio celular**, já com o **nome padronizado** e uma **marca d'água** com protocolo, localização (GPS), data e hora.
 
-🔗 **Acesse:** https://jozielrocha.github.io/checklist/
+🔗 **Acesse:** https://SEU-USUARIO.github.io/checklist/ <!-- troque pelo seu link -->
 
 ---
 
@@ -17,6 +17,9 @@ Aplicativo web para técnicos em campo: guia o atendimento por categoria, tira a
 - **Finalizar / conferir pendências**: lista os itens que ainda estão sem foto antes de sair.
 - **Refazer**: zera a contagem de um item (ou remove um extra da lista) quando a foto saiu errada.
 - **Histórico de protocolos**: mostra protocolo, categoria e andamento, e ao selecionar já abre a categoria certa. Protocolos sem uso há mais de **7 dias** saem do histórico automaticamente.
+- **Aviso de navegador interno**: se o app for aberto dentro do Instagram/Facebook (onde câmera, galeria e GPS falham), aparece um aviso para abrir no Chrome ou Safari.
+- **Botão voltar do celular** funciona como "Voltar ao menu".
+- **Fotos otimizadas**: o lado maior é reduzido para até 2048 px, o que deixa o arquivo leve e evita falhas com câmeras de 50 MP. A marca d'água se ajusta ao tamanho da imagem.
 - **Contagem anônima de acessos** (sem cookies e sem dados pessoais), que pode ser desativada.
 - **Aviso de nova versão**: quando há atualização, aparece uma faixa "Nova versão disponível" com o botão *Atualizar*.
 - **Funciona offline** depois de instalado (PWA).
@@ -57,7 +60,7 @@ Este app conta acessos e algumas ações de forma **anônima e agregada**, apena
 **O que é contado**
 
 - Quantas vezes o app foi aberto (visitas), com informações gerais do acesso, como navegador, sistema e tamanho de tela.
-- Ações genéricas, de uma lista fixa: `checklist-iniciado` (primeira foto de um protocolo/categoria), `foto-salva`, `checklist-finalizado` (todas as fotos feitas), `app-instalado` e a versão em uso (`versao-X.Y.Z`).
+- Ações genéricas, de uma lista fixa: `checklist-iniciado` (primeira foto de um protocolo/categoria), `foto-salva`, `checklist-finalizado` (todas as fotos feitas), `app-instalado`, `navegador-interno` (app aberto dentro do navegador de uma rede social) e a versão em uso (`versao-X.Y.Z`).
 
 **O que nunca é enviado**
 
@@ -99,6 +102,10 @@ A cada atualização publicada, aumente o número em `VERSAO` no `sw.js` (ex.: `
 3. Faça o commit e abra o app publicado: a visita aparece no painel. Em teste local (arquivo aberto no computador) o GoatCounter não conta por padrão.
 4. Confira os termos do plano gratuito do GoatCounter (uso não comercial) caso a empresa adote o app oficialmente.
 
+### Tamanho das fotos
+
+Em `index.html`, procure `LADO_MAXIMO_FOTO` (padrão: 2048 px no lado maior). Use `0` para manter o tamanho original da câmera.
+
 ### Ajustar o tempo do histórico
 
 Em `index.html`, procure `DIAS_HISTORICO` (padrão: 7).
@@ -123,6 +130,8 @@ Em `index.html`, procure `DIAS_HISTORICO` (padrão: 7).
 - O GPS só funciona em página **https** (o GitHub Pages já fornece).
 - Em locais fechados, o GPS pode demorar a conectar.
 - Cada aparelho guarda o próprio progresso; não há sincronização entre aparelhos.
+- No iPhone (Safari), as fotos costumam ir para o app **Arquivos** (pasta Downloads) e não para o app Fotos, e o navegador pode pedir confirmação a cada download. A instalação na tela inicial é manual (compartilhar → *Adicionar à Tela de Início*).
+- Fotos da galeria em formato HEIC podem não abrir em alguns navegadores; nesse caso use a câmera pelo app ou uma foto em JPG.
 
 ## Licença e créditos
 

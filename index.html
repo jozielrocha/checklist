@@ -337,6 +337,10 @@
             word-break: break-all; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
         }
         .toast.erro { border-color: #f87171; }
+        .aviso-navegador { background: #3b2a0a; border: 1px solid #f59e0b; color: #fde68a; border-radius: 10px; margin: 10px 0; padding: 12px; font-size: 0.85rem; line-height: 1.45; }
+        .aviso-navegador strong { color: #fff; }
+        .aviso-navegador .acoes { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        .aviso-navegador button { background: #f59e0b; color: #1c1300; border: none; border-radius: 8px; padding: 8px 12px; font-weight: 700; font-size: 0.8rem; cursor: pointer; }
         .modal-fundo { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
         .modal-caixa { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; width: 100%; max-width: 420px; max-height: 80vh; display: flex; flex-direction: column; gap: 10px; }
         .modal-titulo { font-size: 1rem; font-weight: 700; color: var(--text-main); }
@@ -530,6 +534,55 @@
         try { if (typeof track === "function") track(evento); } catch (e) {}
     }
     const finalizadosNaSessao = new Set();
+
+    // ---------- Navegador interno (Instagram, Facebook...) não suporta câmera/arquivos direito ----------
+    function copiarLink() {
+        const link = location.href;
+        const ok = () => mostrarToast("Link copiado. Cole no Chrome ou Safari.");
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(link).then(ok, () => mostrarToast(link));
+            return;
+        }
+        try {
+            const t = document.createElement("textarea");
+            t.value = link;
+            document.body.appendChild(t);
+            t.select();
+            document.execCommand("copy");
+            document.body.removeChild(t);
+            ok();
+        } catch (e) { mostrarToast(link); }
+    }
+
+    function avisoNavegadorInterno() {
+        const ua = navigator.userAgent || "";
+        if (!/Instagram|FBAN|FBAV|FB_IAB|FBIOS|Snapchat|TikTok|musical_ly/i.test(ua)) return;
+        registrar("navegador-interno");
+        const caixa = document.createElement("div");
+        caixa.className = "aviso-navegador";
+        caixa.innerHTML = '⚠️ <strong>Você está no navegador do Instagram.</strong> Aqui a câmera, a galeria e o GPS podem falhar. ' +
+            'Abra no <strong>Chrome</strong> (ou Safari): toque em <strong>⋮</strong> ou <strong>•••</strong> e escolha <strong>Abrir no navegador</strong>.';
+        const acoes = document.createElement("div");
+        acoes.className = "acoes";
+        const bCopiar = document.createElement("button");
+        bCopiar.type = "button";
+        bCopiar.textContent = "Copiar link";
+        bCopiar.onclick = copiarLink;
+        acoes.appendChild(bCopiar);
+        if (/Android/i.test(ua)) {
+            const bChrome = document.createElement("button");
+            bChrome.type = "button";
+            bChrome.textContent = "Abrir no Chrome";
+            bChrome.onclick = () => {
+                location.href = "intent://" + location.host + location.pathname + location.search +
+                    "#Intent;scheme=https;package=com.android.chrome;end";
+            };
+            acoes.appendChild(bChrome);
+        }
+        caixa.appendChild(acoes);
+        const cont = document.querySelector(".container");
+        if (cont) cont.insertBefore(caixa, cont.firstChild);
+    }
 
     // ---------- Avisos e janelas ----------
     let temporizadorToast = null;
@@ -881,13 +934,25 @@
         document.getElementById("screen-menu").classList.add("hidden");
         document.getElementById("privacy-box").classList.add("hidden");
         document.getElementById("screen-checklist").classList.remove("hidden");
+        try { history.pushState({ ck: key }, ""); } catch (e) {}
 
         renderChecklistItems(data);
         renderCriterios(data.criterios);
         atualizarProgresso();
     }
 
+    // Voltar ao menu: usa o histórico do navegador, assim o botão "voltar" do celular faz o mesmo
     function voltarMenu() {
+        if (history.state && history.state.ck) history.back();
+        else mostrarMenu();
+    }
+
+    window.addEventListener("popstate", () => {
+        const tela = document.getElementById("screen-checklist");
+        if (tela && !tela.classList.contains("hidden")) mostrarMenu();
+    });
+
+    function mostrarMenu() {
         document.getElementById("app-title").innerText = "🌐 TÉCNICO TELECOM";
         document.getElementById("app-subtitle").innerText = "Selecione o tipo de atendimento";
         document.getElementById("screen-checklist").classList.add("hidden");
@@ -1051,7 +1116,7 @@
             try {
                 await salvarUmaFoto(arquivos[i], ctx, prot, nomeExtra);
             } catch (e) {
-                mostrarToast("Não foi possível processar uma das fotos.", "erro");
+                mostrarToast(textoErroFoto(e), "erro");
             }
             if (i < arquivos.length - 1) await esperar(500);
         }
@@ -1059,111 +1124,176 @@
         atualizarProgresso();
     }
 
-    function salvarUmaFoto(file, ctx, prot, nomeExtra) {
+    // Lado maior da foto salva, em pixels. Fotos maiores são reduzidas (arquivo bem mais leve e
+    // sem travar celulares com câmera de 50 MP). Use 0 para manter o tamanho original.
+    const LADO_MAXIMO_FOTO = 2048;
+
+    function decodificarFoto(file) {
         return new Promise((resolve, reject) => {
             const url = URL.createObjectURL(file);
             const img = new Image();
-            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("img")); };
-            img.onload = function() {
-                const rotulo = ctx.tipo === "extra" ? nomeExtra : ctx.itemText;
-
-                const canvas = document.createElement("canvas");
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const c = canvas.getContext("2d");
-                c.drawImage(img, 0, 0);
+            img.onload = () => resolve({
+                fonte: img, w: img.naturalWidth || img.width, h: img.naturalHeight || img.height,
+                fim: () => URL.revokeObjectURL(url)
+            });
+            img.onerror = () => {
                 URL.revokeObjectURL(url);
-
-                const padding = Math.round(canvas.width * 0.03);
-                const fontSize = Math.max(24, Math.round(canvas.width * 0.035));
-                c.font = `bold ${fontSize}px sans-serif`;
-
-                // Foto da galeria: usa a data do arquivo; o GPS é o local atual do aparelho
-                const galeria = ctx.origem === "galeria";
-                const dataHora = (galeria && file.lastModified ? new Date(file.lastModified) : new Date()).toLocaleString("pt-BR");
-                const gpsTexto = (latGlobal && lonGlobal) ? `${latGlobal}, ${lonGlobal}` : "GPS não obtido";
-                const texto1 = `OS / PROTOCOLO: ${prot}`;
-                const texto2 = `${galeria ? "GPS atual" : "GPS"}: ${gpsTexto} | ${dataHora}`;
-                const texto3 = `LOCAL: ${rotulo}`;
-
-                const boxHeight = fontSize * 4.5;
-                const boxY = canvas.height - boxHeight - padding;
-
-                c.fillStyle = "rgba(0, 0, 0, 0.75)";
-                c.fillRect(padding, boxY, canvas.width - (padding * 2), boxHeight);
-
-                c.fillStyle = "#ffffff";
-                c.fillText(texto1, padding * 2, boxY + (fontSize * 1.2));
-
-                // Etiqueta de origem na 1ª linha: verde = tirada no app, âmbar = escolhida da galeria
-                const etiqueta = galeria ? "DA GALERIA" : "TIRADA NO APP";
-                const larguraEtiqueta = c.measureText(etiqueta).width;
-                const fimTexto1 = padding * 2 + c.measureText(texto1).width;
-                const xEtiqueta = canvas.width - padding * 2 - larguraEtiqueta;
-                c.fillStyle = galeria ? "#f59e0b" : "#10b981";
-                c.fillText(etiqueta, xEtiqueta > fimTexto1 + fontSize ? xEtiqueta : fimTexto1 + fontSize, boxY + (fontSize * 1.2));
-
-                c.fillStyle = "#38bdf8";
-                c.fillText(texto2, padding * 2, boxY + (fontSize * 2.6));
-                c.fillStyle = "#10b981";
-                c.fillText(texto3, padding * 2, boxY + (fontSize * 4.0));
-
-                canvas.toBlob(function(blob) {
-                    if (!blob) { reject(new Error("blob")); return; }
-
-                    // Contador / sequência
-                    let n;
-                    let stateKey, slug;
-                    if (ctx.tipo === "extra") {
-                        slug = limparNome(nomeExtra);
-                        const grupo = `${prot}_${currentKey}`;
-                        extrasSalvos[grupo] = extrasSalvos[grupo] || {};
-                        const reg = extrasSalvos[grupo][slug] || { nome: nomeExtra, n: 0 };
-                        n = reg.n + 1;
-                    } else {
-                        stateKey = chaveItem(prot, currentKey, ctx.itemText);
-                        n = contagemItem(stateKey) + 1;
-                    }
-
-                    // Nome: ITEM[_(n)]_PROTOCOLO_CATEGORIA.jpg
-                    const itemNome = limparNome(rotulo) + (n > 1 ? `_(${n})` : "");
-                    const protNome = limparNome(prot);
-                    const catNome = limparNome(checklistsData[currentKey].title);
-                    const nomeArquivo = `${itemNome}_${protNome}_${catNome}.jpg`;
-
-                    const a = document.createElement("a");
-                    const href = URL.createObjectURL(blob);
-                    a.href = href;
-                    a.download = nomeArquivo;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    setTimeout(() => URL.revokeObjectURL(href), 60000);
-                    mostrarToast("✓ Salvo: " + nomeArquivo);
-                    registrar("foto-salva");
-
-                    // Salva progresso
-                    if (ctx.tipo === "extra") {
-                        const grupo = `${prot}_${currentKey}`;
-                        extrasSalvos[grupo][slug] = { nome: nomeExtra, n: n };
-                        gravarJSON("checklist_extras", extrasSalvos);
-                        registrarHistorico(prot, currentKey);
-                        renderListaExtras();
-                    } else {
-                        completedItems[stateKey] = n;
-                        gravarJSON("checklist_completos", completedItems);
-                        registrarHistorico(prot, currentKey);
-                        const card = document.getElementById(`card-${ctx.itemId}`);
-                        const btn = document.getElementById(`btn-${ctx.itemId}`);
-                        if (card) card.classList.add("done");
-                        if (btn) btn.innerText = "✓ Salvo";
-                        desenharSubItem(ctx.itemId, ctx.itemText, n);
-                    }
-                    resolve();
-                }, "image/jpeg", 0.90);
+                if (typeof createImageBitmap === "function") {
+                    createImageBitmap(file).then(
+                        bm => resolve({ fonte: bm, w: bm.width, h: bm.height, fim: () => { try { bm.close(); } catch (e) {} } }),
+                        () => reject(new Error("formato"))
+                    );
+                } else {
+                    reject(new Error("formato"));
+                }
             };
             img.src = url;
         });
+    }
+
+    // Desenha a faixa de informações já ajustada ao tamanho da imagem (nunca ultrapassa as bordas)
+    function desenharMarcaDagua(c, W, H, t, galeria) {
+        const padding = Math.max(4, Math.round(W * 0.03));
+        const larguraUtil = W - padding * 4;
+        const etiqueta = galeria ? "DA GALERIA" : "TIRADA NO APP";
+
+        let fs = Math.max(10, Math.round(W * 0.035));
+        fs = Math.min(fs, Math.floor((H * 0.6) / 4.5));          // faixa ocupa no máximo 60% da altura
+        const larguraNecessaria = f => {
+            c.font = `bold ${f}px sans-serif`;
+            return Math.max(
+                c.measureText(t.l1).width + f + c.measureText(etiqueta).width,
+                c.measureText(t.l2).width,
+                c.measureText(t.l3).width
+            );
+        };
+        while (fs > 7 && larguraNecessaria(fs) > larguraUtil) fs--;
+        c.font = `bold ${fs}px sans-serif`;
+
+        // Se mesmo no menor tamanho não couber, encurta o nome do local com reticências
+        let l3 = t.l3;
+        while (l3.length > 4 && c.measureText(l3).width > larguraUtil) l3 = l3.slice(0, -2).trimEnd() + "…";
+
+        const boxH = fs * 4.5;
+        const boxY = Math.max(0, H - boxH - padding);
+
+        c.fillStyle = "rgba(0, 0, 0, 0.75)";
+        c.fillRect(padding, boxY, W - padding * 2, boxH);
+
+        c.fillStyle = "#ffffff";
+        c.fillText(t.l1, padding * 2, boxY + fs * 1.2);
+
+        // Etiqueta de origem na 1ª linha: verde = tirada no app, âmbar = escolhida da galeria
+        const larguraEtiqueta = c.measureText(etiqueta).width;
+        const fimTexto1 = padding * 2 + c.measureText(t.l1).width;
+        const xEtiqueta = W - padding * 2 - larguraEtiqueta;
+        c.fillStyle = galeria ? "#f59e0b" : "#10b981";
+        c.fillText(etiqueta, xEtiqueta > fimTexto1 + fs ? xEtiqueta : fimTexto1 + fs, boxY + fs * 1.2);
+
+        c.fillStyle = "#38bdf8";
+        c.fillText(t.l2, padding * 2, boxY + fs * 2.6);
+        c.fillStyle = "#10b981";
+        c.fillText(l3, padding * 2, boxY + fs * 4.0);
+    }
+
+    function gerarImagemMarcada(dec, lado, textos, galeria) {
+        try {
+            const escala = lado > 0 ? Math.min(1, lado / Math.max(dec.w, dec.h)) : 1;
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(dec.w * escala));
+            canvas.height = Math.max(1, Math.round(dec.h * escala));
+            const c = canvas.getContext("2d");
+            if (!c) return Promise.resolve(null);
+            c.drawImage(dec.fonte, 0, 0, canvas.width, canvas.height);
+            desenharMarcaDagua(c, canvas.width, canvas.height, textos, galeria);
+            return new Promise(res => canvas.toBlob(blob => res(blob), "image/jpeg", 0.90));
+        } catch (e) {
+            return Promise.resolve(null);
+        }
+    }
+
+    function textoErroFoto(e) {
+        if (e && e.message === "formato") return "Não consegui abrir esta foto (formato não suportado, como HEIC). Tente outra foto ou use a câmera.";
+        if (e && e.message === "memoria") return "A foto é grande demais para este aparelho. Tente outra foto ou use a câmera.";
+        return "Não foi possível processar a foto. Tente novamente.";
+    }
+
+    async function salvarUmaFoto(file, ctx, prot, nomeExtra) {
+        const rotulo = ctx.tipo === "extra" ? nomeExtra : ctx.itemText;
+
+        // Foto da galeria: usa a data do arquivo; o GPS é o local atual do aparelho
+        const galeria = ctx.origem === "galeria";
+        const dataHora = (galeria && file.lastModified ? new Date(file.lastModified) : new Date()).toLocaleString("pt-BR");
+        const gpsTexto = (latGlobal && lonGlobal) ? `${latGlobal}, ${lonGlobal}` : "GPS não obtido";
+        const textos = {
+            l1: `OS / PROTOCOLO: ${prot}`,
+            l2: `${galeria ? "GPS atual" : "GPS"}: ${gpsTexto} | ${dataHora}`,
+            l3: `LOCAL: ${rotulo}`
+        };
+
+        let dec;
+        try { dec = await decodificarFoto(file); } catch (e) { throw new Error("formato"); }
+
+        let blob = null;
+        try {
+            const tentativas = LADO_MAXIMO_FOTO > 0 ? [LADO_MAXIMO_FOTO, 1280] : [0, 2048, 1280];
+            for (const lado of tentativas) {
+                blob = await gerarImagemMarcada(dec, lado, textos, galeria);
+                if (blob) break;
+            }
+        } finally {
+            dec.fim();
+        }
+        if (!blob) throw new Error("memoria");
+
+        // Contador / sequência
+        let n;
+        let stateKey, slug;
+        if (ctx.tipo === "extra") {
+            slug = limparNome(nomeExtra);
+            const grupo = `${prot}_${currentKey}`;
+            extrasSalvos[grupo] = extrasSalvos[grupo] || {};
+            const reg = extrasSalvos[grupo][slug] || { nome: nomeExtra, n: 0 };
+            n = reg.n + 1;
+        } else {
+            stateKey = chaveItem(prot, currentKey, ctx.itemText);
+            n = contagemItem(stateKey) + 1;
+        }
+
+        // Nome: ITEM[_(n)]_PROTOCOLO_CATEGORIA.jpg
+        const itemNome = limparNome(rotulo) + (n > 1 ? `_(${n})` : "");
+        const protNome = limparNome(prot);
+        const catNome = limparNome(checklistsData[currentKey].title);
+        const nomeArquivo = `${itemNome}_${protNome}_${catNome}.jpg`;
+
+        const a = document.createElement("a");
+        const href = URL.createObjectURL(blob);
+        a.href = href;
+        a.download = nomeArquivo;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(href), 60000);
+        mostrarToast("✓ Salvo: " + nomeArquivo);
+        registrar("foto-salva");
+
+        // Salva progresso
+        if (ctx.tipo === "extra") {
+            const grupo = `${prot}_${currentKey}`;
+            extrasSalvos[grupo][slug] = { nome: nomeExtra, n: n };
+            gravarJSON("checklist_extras", extrasSalvos);
+            registrarHistorico(prot, currentKey);
+            renderListaExtras();
+        } else {
+            completedItems[stateKey] = n;
+            gravarJSON("checklist_completos", completedItems);
+            registrarHistorico(prot, currentKey);
+            const card = document.getElementById(`card-${ctx.itemId}`);
+            const btn = document.getElementById(`btn-${ctx.itemId}`);
+            if (card) card.classList.add("done");
+            if (btn) btn.innerText = "✓ Salvo";
+            desenharSubItem(ctx.itemId, ctx.itemText, n);
+        }
     }
 
     function atualizarEstadoBotoes() {
@@ -1213,6 +1343,7 @@
         limparHistoricoAntigo();
         iniciarGPS();
         renderMenu();
+        avisoNavegadorInterno();
     }
 </script>
 

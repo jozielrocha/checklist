@@ -4,7 +4,7 @@
 // AO PUBLICAR UMA ATUALIZAÇÃO: aumente o número em VERSAO (ex.: "1.0.1").
 // Isso faz aparecer o aviso "Nova versão disponível" nos aparelhos que estiverem com o app aberto.
 // Mantenha o mesmo número em appVersion no analytics-config.js.
-const VERSAO = "1.0.0";
+const VERSAO = "1.0.1";
 const CACHE = "checklist-ftth-" + VERSAO;
 const ARQUIVOS = [
   "./",
