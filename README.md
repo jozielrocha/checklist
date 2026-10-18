@@ -17,6 +17,7 @@ Aplicativo web para técnicos em campo: guia o atendimento por categoria, tira a
 - **Finalizar / conferir pendências**: lista os itens que ainda estão sem foto antes de sair.
 - **Refazer**: zera a contagem de um item (ou remove um extra da lista) quando a foto saiu errada.
 - **Histórico de protocolos**: mostra protocolo, categoria e andamento, e ao selecionar já abre a categoria certa. Protocolos sem uso há mais de **7 dias** saem do histórico automaticamente.
+- **Contagem anônima de acessos** (sem cookies e sem dados pessoais), que pode ser desativada.
 - **Aviso de nova versão**: quando há atualização, aparece uma faixa "Nova versão disponível" com o botão *Atualizar*.
 - **Funciona offline** depois de instalado (PWA).
 - Barra de progresso por categoria.
@@ -45,8 +46,35 @@ Exemplo: `ANEXO_IPV6_123456_ATIVACAO_FTTH.jpg`
 
 ## Privacidade
 
-- O app roda **100% no aparelho**. Nenhuma foto, protocolo ou localização é enviada a servidores.
+- As **fotos, o protocolo e a localização (GPS) ficam só no aparelho**: o app não envia nada disso a nenhum servidor. As fotos são salvas na pasta de Downloads.
 - O progresso e o histórico ficam guardados **no navegador de cada aparelho** e são apagados automaticamente após 7 dias sem uso do protocolo. Limpar os dados do navegador também apaga o histórico (as fotos já salvas em Downloads continuam).
+- O app **conta acessos de forma anônima** (veja a seção abaixo).
+
+### Estatísticas de uso (anônimas)
+
+Este app conta acessos e algumas ações de forma **anônima e agregada**, apenas para avaliar a aceitação da ferramenta. Não é usado para identificar, acompanhar ou monitorar nenhum colaborador.
+
+**O que é contado**
+
+- Quantas vezes o app foi aberto (visitas), com informações gerais do acesso, como navegador, sistema e tamanho de tela.
+- Ações genéricas, de uma lista fixa: `checklist-iniciado` (primeira foto de um protocolo/categoria), `foto-salva`, `checklist-finalizado` (todas as fotos feitas), `app-instalado` e a versão em uso (`versao-X.Y.Z`).
+
+**O que nunca é enviado**
+
+- Número da OS/protocolo, nomes, fotos, localização (GPS) ou qualquer texto digitado.
+- O código só aceita os eventos da lista fixa acima; qualquer outro nome é ignorado.
+
+**Como funciona**
+
+- Usa o [GoatCounter](https://www.goatcounter.com), um contador de visitas de código aberto, sem cookies.
+- Respeita a configuração "Não rastrear" do navegador.
+- O código do app que envia os eventos está neste repositório e pode ser conferido em `analytics.js` e `analytics-config.js`. O script do contador (`count.js`) é carregado dos servidores do GoatCounter.
+- Para detalhes sobre o que o GoatCounter armazena, consulte a [política de privacidade](https://www.goatcounter.com/privacy) dele.
+- Sem internet, nada é contado e o app funciona normalmente.
+
+**Como desativar**
+
+Em `analytics-config.js`, troque `enabled: true` por `enabled: false`. Se você fez um fork do projeto, troque também o `endpoint` pelo seu próprio código do GoatCounter, para não misturar as estatísticas com as do projeto original.
 
 ## Para quem mantém o projeto
 
@@ -62,7 +90,14 @@ Depois: *commit* e *push*. Em 1 a 2 minutos o GitHub Pages publica, e os aparelh
 
 ### Avisar os aparelhos de uma nova versão
 
-A cada atualização publicada, aumente o número em `VERSAO` na primeira linha do `sw.js` (ex.: `"1.0.0"` → `"1.0.1"`). Os aparelhos que estiverem com o app aberto mostram a faixa **"Nova versão disponível"**. Sem isso, a atualização ainda chega, mas só na próxima vez que o app for aberto com internet.
+A cada atualização publicada, aumente o número em `VERSAO` no `sw.js` (ex.: `"1.0.0"` → `"1.0.1"`) e use o mesmo número em `appVersion` no `analytics-config.js`. Os aparelhos que estiverem com o app aberto mostram a faixa **"Nova versão disponível"**. Sem isso, a atualização ainda chega, mas só na próxima vez que o app for aberto com internet.
+
+### Ativar o contador de acessos
+
+1. Crie uma conta gratuita no [GoatCounter](https://www.goatcounter.com) (o código do seu site é a parte antes de `.goatcounter.com`).
+2. Em `analytics-config.js`, troque `SEU-CODIGO` pelo seu código. Enquanto o texto original estiver lá, o contador fica desligado.
+3. Faça o commit e abra o app publicado: a visita aparece no painel. Em teste local (arquivo aberto no computador) o GoatCounter não conta por padrão.
+4. Confira os termos do plano gratuito do GoatCounter (uso não comercial) caso a empresa adote o app oficialmente.
 
 ### Ajustar o tempo do histórico
 
@@ -75,6 +110,7 @@ Em `index.html`, procure `DIAS_HISTORICO` (padrão: 7).
 | `index.html` | O aplicativo (tela, câmera/galeria, marca d'água, GPS, histórico) |
 | `checklists.js` | Categorias e itens de cada checklist |
 | `sw.js` | Service worker: uso offline, atualização e número da versão |
+| `analytics.js` / `analytics-config.js` | Contador anônimo de acessos (lista fixa de eventos) e sua configuração |
 | `manifest.json` | Dados para instalar como app (nome, cores, ícones) |
 | `icon-*.png` | Ícones do app |
 

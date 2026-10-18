@@ -3,12 +3,15 @@
 // do aparelho se não houver sinal.
 // AO PUBLICAR UMA ATUALIZAÇÃO: aumente o número em VERSAO (ex.: "1.0.1").
 // Isso faz aparecer o aviso "Nova versão disponível" nos aparelhos que estiverem com o app aberto.
+// Mantenha o mesmo número em appVersion no analytics-config.js.
 const VERSAO = "1.0.0";
 const CACHE = "checklist-ftth-" + VERSAO;
 const ARQUIVOS = [
   "./",
   "./index.html",
   "./checklists.js",
+  "./analytics-config.js",
+  "./analytics.js",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",
@@ -57,6 +60,6 @@ self.addEventListener("fetch", e => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
-  const dinamico = req.mode === "navigate" || /(\/|index\.html|checklists\.js|manifest\.json)$/.test(url.pathname);
+  const dinamico = req.mode === "navigate" || /(\/|index\.html|manifest\.json|(checklists|analytics|analytics-config)\.js)$/.test(url.pathname);
   e.respondWith(dinamico ? redePrimeiro(req) : cachePrimeiro(req));
 });

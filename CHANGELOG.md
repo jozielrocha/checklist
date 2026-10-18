@@ -17,4 +17,5 @@ Primeira versão pública.
 - **Aviso de nova versão** (faixa "Nova versão disponível").
 - Funciona **offline** depois de instalado (PWA).
 - Listas de itens e categorias em arquivo separado (`checklists.js`), fáceis de editar.
+- **Estatísticas anônimas de uso** (GoatCounter, sem cookies): conta acessos e ações genéricas (abrir, salvar foto, finalizar checklist). Nenhum dado pessoal, protocolo, foto ou localização é enviado. Detalhes na seção "Estatísticas de uso" do README; para desativar, use `enabled: false` em `analytics-config.js`.
 - Licença **MIT**.

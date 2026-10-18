@@ -432,7 +432,7 @@
     </div>
 
     <div class="privacy-note" id="privacy-box">
-        🔒 <strong>Privacidade e Armazenamento Local:</strong> O app roda 100% no seu dispositivo. As fotos recebem marca d'água com geolocalização e são salvas na sua pasta de downloads. O progresso fica salvo para evitar perdas se atualizar a página.
+        🔒 <strong>Privacidade e Armazenamento Local:</strong> O app roda no seu dispositivo. As fotos recebem marca d'água com geolocalização e são salvas na sua pasta de downloads, sem serem enviadas a nenhum servidor. O progresso fica salvo para evitar perdas se atualizar a página.
     </div>
 
     <div id="screen-menu">
@@ -463,9 +463,12 @@
     <footer>
         <p style="margin-bottom: 3px;">Ferramenta de Uso Operacional Exclusivo</p>
         <p>© 2026 — Desenvolvido por <strong>Joziel Rocha</strong></p>
+        <p class="rodape-privacidade" style="margin-top: 3px;">Este app conta acessos de forma anônima, sem coletar dados pessoais. Saiba mais no README do projeto.</p>
     </footer>
 </div>
 
+<script src="analytics-config.js"></script>
+<script src="analytics.js"></script>
 <script src="checklists.js"></script>
 <script>
     document.addEventListener('contextmenu', event => {
@@ -521,6 +524,12 @@
         if (mudou) gravarJSON("checklist_completos", completedItems);
     }
     migrarProgressoAntigo();
+
+    // ---------- Contador anônimo (só eventos genéricos; nunca protocolo, nome, foto ou GPS) ----------
+    function registrar(evento) {
+        try { if (typeof track === "function") track(evento); } catch (e) {}
+    }
+    const finalizadosNaSessao = new Set();
 
     // ---------- Avisos e janelas ----------
     let temporizadorToast = null;
@@ -695,6 +704,8 @@
         const textoExtras = totalExtras ? ` Fotos extras: ${totalExtras}.` : "";
 
         if (pendentes.length === 0) {
+            const chaveFim = prot + "||" + currentKey;
+            if (!finalizadosNaSessao.has(chaveFim)) { finalizadosNaSessao.add(chaveFim); registrar("checklist-finalizado"); }
             const r = await abrirModal({
                 titulo: "✅ Tudo pronto!",
                 texto: `Todas as ${dados.items.length} fotos do protocolo ${prot} foram feitas.${textoExtras}`,
@@ -773,8 +784,10 @@
     // ---------- Histórico ----------
     function registrarHistorico(prot, cat) {
         const h = lerJSON("checklist_historico");
+        const novo = !h[prot + "||" + cat];
         h[prot + "||" + cat] = { prot: prot, cat: cat, ts: Date.now() };
         gravarJSON("checklist_historico", h);
+        if (novo) registrar("checklist-iniciado");
     }
 
     // Junta o histórico novo com o que já existia salvo de versões anteriores
@@ -1127,6 +1140,7 @@
                     document.body.removeChild(a);
                     setTimeout(() => URL.revokeObjectURL(href), 60000);
                     mostrarToast("✓ Salvo: " + nomeArquivo);
+                    registrar("foto-salva");
 
                     // Salva progresso
                     if (ctx.tipo === "extra") {
